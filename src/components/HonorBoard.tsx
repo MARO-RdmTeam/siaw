@@ -69,6 +69,21 @@ export const HonorBoard: React.FC = () => {
         </div>
       </div>
 
+      {/* Empty State when no grades exist */}
+      {!top1 && (
+        <div className="bg-white rounded-3xl border border-blue-100/90 p-10 text-center space-y-3 shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-500 mx-auto flex items-center justify-center">
+            <Trophy className="w-7 h-7" />
+          </div>
+          <h4 className="text-base font-extrabold text-slate-800">
+            لا توجد درجات مرصودة لهذا الفصل حتى الآن
+          </h4>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            ستظهر منصة تتويج الأوائل والمتفوقين تلقائياً هنا فور قيام المعلمين برصد درجات الاختبارات الشهرية.
+          </p>
+        </div>
+      )}
+
       {/* Podium for Top 3 Students */}
       {top1 && (
         <div className="bg-white rounded-3xl border border-blue-100/90 p-6 sm:p-8 shadow-sm">

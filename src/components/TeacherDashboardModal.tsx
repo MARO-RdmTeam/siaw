@@ -116,7 +116,7 @@ export const TeacherDashboardModal: React.FC = () => {
       maxScore: Number(maxScore),
       evaluation: evaluation || 'متفوق',
       notes: notes.trim() || undefined,
-      teacherName: currentTeacher ? currentTeacher.name : 'أ. طارق عبد الرحمن',
+      teacherName: currentTeacher ? currentTeacher.name : 'معلم المادة',
     });
 
     setGradeSuccessMsg('تمت إضافة الدرجة بنجاح إلى سجل درجات الفصل!');
@@ -124,23 +124,6 @@ export const TeacherDashboardModal: React.FC = () => {
     setSeatNumber('');
     setNotes('');
     setTimeout(() => setGradeSuccessMsg(''), 4000);
-  };
-
-  // Quick fill sample student
-  const handleQuickFillStudent = () => {
-    const samples = [
-      'عبد الله محمد القحطاني',
-      'ريم إبراهيم العتيبي',
-      'سلمان فيصل الحربي',
-      'دانة فهد الدوسري',
-      'زياد عادل المالكي',
-    ];
-    const picked = samples[Math.floor(Math.random() * samples.length)];
-    setStudentName(picked);
-    setSeatNumber('60' + Math.floor(10 + Math.random() * 89));
-    const randomScore = Math.floor(88 + Math.random() * 13);
-    handleScoreChange(randomScore);
-    setNotes('أداء متميز ومشاركة نموذجية في الحصة');
   };
 
   // Handle Schedule Image Upload / Change
@@ -394,13 +377,6 @@ export const TeacherDashboardModal: React.FC = () => {
                     <h5 className="font-extrabold text-slate-800 text-sm">
                       تسجيل درجة جديدة لامتحان الشهر
                     </h5>
-                    <button
-                      type="button"
-                      onClick={handleQuickFillStudent}
-                      className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" /> تعبئة طالب عينة
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
