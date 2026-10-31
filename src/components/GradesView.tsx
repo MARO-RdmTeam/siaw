@@ -10,9 +10,13 @@ import {
   PlusCircle,
   LayoutGrid,
   List,
+  Edit3,
+  Star,
+  X,
+  Save,
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
-import { MONTHS, MONTHLY_EXAM_SUBJECTS } from '../services/mockData';
+import { MONTHS, MONTHLY_EXAM_SUBJECTS, EVALUATION_OPTIONS } from '../services/mockData';
 import type { StudentGrade } from '../types';
 
 export const GradesView: React.FC = () => {
@@ -29,9 +33,22 @@ export const GradesView: React.FC = () => {
     currentTeacher,
     setTeacherModalOpen,
     removeGrade,
+    updateGrade,
+    toggleStudentDistinction,
   } = useSchool();
 
   const [viewStyle, setViewStyle] = useState<'cards' | 'table'>('cards');
+
+  // Edit Grade Modal State
+  const [editingGrade, setEditingGrade] = useState<StudentGrade | null>(null);
+  const [editStudentName, setEditStudentName] = useState('');
+  const [editSubject, setEditSubject] = useState('');
+  const [editMonth, setEditMonth] = useState('');
+  const [editScore, setEditScore] = useState<number>(0);
+  const [editMaxScore, setEditMaxScore] = useState<number>(100);
+  const [editEvaluation, setEditEvaluation] = useState('');
+  const [editIsDistinguished, setEditIsDistinguished] = useState(false);
+  const [editNotes, setEditNotes] = useState('');
 
   // Filtered grades calculation
   const filteredGrades = useMemo(() => {
@@ -157,6 +174,41 @@ export const GradesView: React.FC = () => {
     if (window.confirm('هل أنت متأكد من حذف درجة هذا الطالب؟')) {
       removeGrade(id);
     }
+  };
+
+  const handleStartEditGrade = (e: React.MouseEvent, grade: StudentGrade) => {
+    e.stopPropagation();
+    setEditingGrade(grade);
+    setEditStudentName(grade.studentName);
+    setEditSubject(grade.subject);
+    setEditMonth(grade.month);
+    setEditScore(grade.score);
+    setEditMaxScore(grade.maxScore);
+    setEditEvaluation(grade.evaluation || 'متفوق');
+    setEditIsDistinguished(!!grade.isDistinguished);
+    setEditNotes(grade.notes || '');
+  };
+
+  const handleSaveGradeEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGrade) return;
+    await updateGrade({
+      ...editingGrade,
+      studentName: editStudentName.trim(),
+      subject: editSubject,
+      month: editMonth,
+      score: Number(editScore),
+      maxScore: Number(editMaxScore),
+      evaluation: editEvaluation,
+      isDistinguished: editIsDistinguished,
+      notes: editNotes.trim() || undefined,
+    });
+    setEditingGrade(null);
+  };
+
+  const handleToggleDistinction = async (e: React.MouseEvent, gradeId: string) => {
+    e.stopPropagation();
+    await toggleStudentDistinction(gradeId);
   };
 
   return (
@@ -353,7 +405,11 @@ export const GradesView: React.FC = () => {
               <div
                 key={grade.id}
                 onClick={() => handleOpenCertificate(grade)}
-                className="group relative bg-white rounded-3xl border border-slate-200/90 hover:border-blue-300 p-5 shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden"
+                className={`group relative bg-white rounded-3xl p-5 shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between overflow-hidden border ${
+                  grade.isDistinguished
+                    ? 'border-amber-300 ring-2 ring-amber-400/20 shadow-amber-50'
+                    : 'border-slate-200/90 hover:border-blue-300'
+                }`}
               >
                 {/* Top Bar inside card */}
                 <div>
@@ -363,9 +419,16 @@ export const GradesView: React.FC = () => {
                         {grade.studentName.charAt(0)}
                       </div>
                       <div>
-                        <h4 className="font-extrabold text-slate-900 text-base group-hover:text-blue-700 transition-colors">
-                          {grade.studentName}
-                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-extrabold text-slate-900 text-base group-hover:text-blue-700 transition-colors">
+                            {grade.studentName}
+                          </h4>
+                          {grade.isDistinguished && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-300 text-amber-950 border border-amber-300 shadow-xs inline-flex items-center gap-1">
+                              ⭐ متميز
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                           <span>{grade.date}</span>
                         </div>
@@ -417,13 +480,33 @@ export const GradesView: React.FC = () => {
 
                   <div className="flex items-center gap-2">
                     {currentTeacher && (
-                      <button
-                        onClick={(e) => handleDeleteGrade(e, grade.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="حذف هذه الدرجة"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                        <button
+                          onClick={(e) => handleToggleDistinction(e, grade.id)}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            grade.isDistinguished
+                              ? 'text-amber-500 bg-amber-100/60 hover:bg-amber-100'
+                              : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
+                          }`}
+                          title={grade.isDistinguished ? 'إلغاء وسام الطالب المتميز' : 'تمييز الطالب كـ (طالب متميز ⭐)'}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${grade.isDistinguished ? 'fill-amber-500' : ''}`} />
+                        </button>
+                        <button
+                          onClick={(e) => handleStartEditGrade(e, grade)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                          title="تعديل الدرجة وبيانات الطالب"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteGrade(e, grade.id)}
+                          className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          title="حذف هذه الدرجة"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
 
                     <span className="text-blue-600 font-bold text-xs flex items-center gap-1 group-hover:underline">
@@ -471,6 +554,11 @@ export const GradesView: React.FC = () => {
                           {grade.studentName.charAt(0)}
                         </span>
                         <span>{grade.studentName}</span>
+                        {grade.isDistinguished && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                            ⭐ متميز
+                          </span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 font-semibold text-slate-700">
                         {grade.subject}
@@ -493,20 +581,41 @@ export const GradesView: React.FC = () => {
                         {grade.teacherName}
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => handleOpenCertificate(grade)}
-                            className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100"
+                            className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer"
                           >
                             شهادة
                           </button>
                           {currentTeacher && (
-                            <button
-                              onClick={(e) => handleDeleteGrade(e, grade.id)}
-                              className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <>
+                              <button
+                                onClick={(e) => handleToggleDistinction(e, grade.id)}
+                                className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                                  grade.isDistinguished
+                                    ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+                                    : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
+                                }`}
+                                title={grade.isDistinguished ? 'إلغاء تمييز الطالب' : 'منح وسام طالب متميز ⭐'}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${grade.isDistinguished ? 'fill-amber-500' : ''}`} />
+                              </button>
+                              <button
+                                onClick={(e) => handleStartEditGrade(e, grade)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer"
+                                title="تعديل الدرجة"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteGrade(e, grade.id)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                title="حذف الدرجة"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -533,6 +642,170 @@ export const GradesView: React.FC = () => {
           >
             إضافة درجة لهذا الصف الآن
           </button>
+        </div>
+      )}
+
+      {/* Edit Grade Modal */}
+      {editingGrade && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-blue-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-4 bg-gradient-to-r from-blue-700 to-indigo-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5" />
+                <h4 className="font-bold text-sm sm:text-base">تعديل درجة وبيانات الطالب</h4>
+              </div>
+              <button
+                onClick={() => setEditingGrade(null)}
+                className="p-1 rounded-full hover:bg-white/20 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGradeEdit} className="p-5 space-y-4 overflow-y-auto">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">اسم الطالب الرباعي *</label>
+                <input
+                  type="text"
+                  value={editStudentName}
+                  onChange={(e) => setEditStudentName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:outline-none focus:border-blue-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">الشهر / الاختبار</label>
+                  <select
+                    value={editMonth}
+                    onChange={(e) => setEditMonth(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                  >
+                    {MONTHS.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">المادة</label>
+                  <select
+                    value={editSubject}
+                    onChange={(e) => setEditSubject(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                  >
+                    {MONTHLY_EXAM_SUBJECTS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">الدرجة المحققة *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editScore}
+                    onChange={(e) => {
+                      const sc = Number(e.target.value);
+                      setEditScore(sc);
+                      const pct = (sc / (editMaxScore || 100)) * 100;
+                      if (pct >= 95) setEditEvaluation('متفوق');
+                      else if (pct >= 85) setEditEvaluation('ممتاز');
+                      else if (pct >= 75) setEditEvaluation('جيد جداً');
+                      else if (pct >= 65) setEditEvaluation('جيد');
+                      else if (pct >= 50) setEditEvaluation('مقبول');
+                      else setEditEvaluation('يحتاج متابعة');
+                    }}
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-black text-blue-900 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">الدرجة القصوى</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={editMaxScore}
+                    onChange={(e) => setEditMaxScore(Number(e.target.value))}
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-black text-slate-600 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Evaluation options */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>التقدير المحدد: <span className="text-blue-700 font-bold underline">{editEvaluation}</span></span>
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  {EVALUATION_OPTIONS.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setEditEvaluation(opt)}
+                      className={`py-1.5 px-1 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                        editEvaluation === opt
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-1 ring-blue-300'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Distinguished Student switch */}
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
+                  <span className="text-xs font-black text-amber-950">تمييز كـ «طالب متميز» (لوحة الشرف) ⭐</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editIsDistinguished}
+                    onChange={(e) => setEditIsDistinguished(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">ملاحظة المعلم</label>
+                <input
+                  type="text"
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingGrade(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>حفظ التعديلات</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

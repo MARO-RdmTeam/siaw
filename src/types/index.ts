@@ -24,6 +24,8 @@ export interface StudentGrade {
   score: number;
   maxScore: number;
   evaluation?: string; // e.g. "متفوق", "ممتاز", "جيد جداً", "جيد", "مقبول"
+  isDistinguished?: boolean; // ⭐ طالب متميز
+  distinctionReason?: string; // سبب التميز أو وسام الشرف
   notes?: string;
   date: string;
   teacherName: string;

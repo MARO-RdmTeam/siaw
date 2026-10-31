@@ -25,11 +25,13 @@ import {
   clearFirebaseConfig,
   getGradesForClass,
   saveGrade,
+  updateGrade,
   deleteGrade,
   getScheduleForClass,
   saveSchedule,
   getAnnouncementsForClass,
   saveAnnouncement,
+  deleteAnnouncement,
   authenticateTeacher,
   signOutTeacher,
 } from '../services/firebase';
@@ -94,10 +96,14 @@ interface SchoolContextType {
 
   // Mutations
   addNewGrade: (gradeData: Omit<StudentGrade, 'id' | 'date'>) => Promise<void>;
+  updateGrade: (grade: StudentGrade) => Promise<void>;
+  toggleStudentDistinction: (gradeId: string) => Promise<void>;
   removeGrade: (gradeId: string) => Promise<void>;
   updateScheduleImage: (imageUrl: string, title?: string) => Promise<void>;
   updateTimetableSchedule: (schedule: SectionSchedule) => Promise<void>;
   addNewAnnouncement: (announcement: Omit<Announcement, 'id' | 'date'>) => Promise<void>;
+  updateAnnouncement: (announcement: Announcement) => Promise<void>;
+  removeAnnouncement: (announcementId: string) => Promise<void>;
 }
 
 const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
@@ -271,6 +277,29 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentGrades((prev) => prev.filter((g) => g.id !== gradeId));
   };
 
+  const updateGradeHandler = async (grade: StudentGrade) => {
+    const updated = await updateGrade(grade, allGradesList);
+    setAllGradesList((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setCurrentGrades((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    if (selectedStudentReport && selectedStudentReport.id === updated.id) {
+      setSelectedStudentReport(updated);
+    }
+  };
+
+  const toggleStudentDistinction = async (gradeId: string) => {
+    const target = allGradesList.find((g) => g.id === gradeId);
+    if (!target) return;
+    const newVal = !target.isDistinguished;
+    const updated: StudentGrade = {
+      ...target,
+      isDistinguished: newVal,
+    };
+    await updateGradeHandler(updated);
+    if (newVal) {
+      triggerCelebration();
+    }
+  };
+
   const updateScheduleImage = async (imageUrl: string, title?: string) => {
     const updated: SectionSchedule = {
       ...currentSchedule,
@@ -300,6 +329,18 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (saved.gradeId === selectedGradeId && saved.sectionId === selectedSectionId) {
       setCurrentAnnouncements((prev) => [saved, ...prev]);
     }
+  };
+
+  const updateAnnouncement = async (announcement: Announcement) => {
+    const saved = await saveAnnouncement(announcement, allAnnouncements);
+    setAllAnnouncements((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+    setCurrentAnnouncements((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+  };
+
+  const removeAnnouncement = async (announcementId: string) => {
+    await deleteAnnouncement(announcementId, allAnnouncements);
+    setAllAnnouncements((prev) => prev.filter((a) => a.id !== announcementId));
+    setCurrentAnnouncements((prev) => prev.filter((a) => a.id !== announcementId));
   };
 
   return (
@@ -351,10 +392,14 @@ export const SchoolProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         triggerCelebration,
 
         addNewGrade,
+        updateGrade: updateGradeHandler,
+        toggleStudentDistinction,
         removeGrade,
         updateScheduleImage,
         updateTimetableSchedule,
         addNewAnnouncement,
+        updateAnnouncement,
+        removeAnnouncement,
       }}
     >
       {children}

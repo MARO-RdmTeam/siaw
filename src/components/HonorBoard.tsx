@@ -21,6 +21,10 @@ export const HonorBoard: React.FC = () => {
     return list;
   }, [currentGrades]);
 
+  const distinguishedStudents = useMemo(() => {
+    return currentGrades.filter((g) => g.isDistinguished);
+  }, [currentGrades]);
+
   const top1 = sortedAchievers[0];
   const top2 = sortedAchievers[1];
   const top3 = sortedAchievers[2];
@@ -81,6 +85,55 @@ export const HonorBoard: React.FC = () => {
           <p className="text-xs text-slate-500 max-w-md mx-auto">
             ستظهر منصة تتويج الأوائل والمتفوقين تلقائياً هنا فور قيام المعلمين برصد درجات الاختبارات الشهرية.
           </p>
+        </div>
+      )}
+
+      {/* Featured Distinguished Students Section */}
+      {distinguishedStudents.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/15 to-amber-500/10 rounded-3xl border-2 border-amber-300/80 p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-black text-amber-950 text-base flex items-center gap-2">
+              <span className="p-1.5 rounded-xl bg-amber-400 text-amber-950">
+                <Star className="w-4 h-4 fill-amber-950" />
+              </span>
+              <span>فرسان التميز وأصحاب الأوسمة الخاصة ⭐</span>
+            </h4>
+            <span className="text-xs font-bold bg-amber-400/30 text-amber-900 px-3 py-1 rounded-full border border-amber-300">
+              {distinguishedStudents.length} طلاب متميزين
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {distinguishedStudents.map((student) => (
+              <div
+                key={student.id}
+                onClick={() => handleStudentClick(student)}
+                className="p-4 rounded-2xl bg-white border border-amber-300 hover:border-amber-500 shadow-xs hover:shadow-md transition-all flex items-center justify-between cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-amber-950 font-black flex items-center justify-center text-sm shadow-xs group-hover:scale-105 transition-transform">
+                    {student.studentName.charAt(0)}
+                  </div>
+                  <div>
+                    <h5 className="font-black text-slate-900 text-sm group-hover:text-amber-700 flex items-center gap-1">
+                      <span>{student.studentName}</span>
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                    </h5>
+                    <p className="text-xs text-amber-800 font-semibold">{student.subject} • {student.evaluation || 'متفوق'}</p>
+                  </div>
+                </div>
+
+                <div className="text-left">
+                  <span className="text-xs font-black text-amber-900 font-mono block">
+                    {student.score}/{student.maxScore}
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                    وسام تميز 🏅
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

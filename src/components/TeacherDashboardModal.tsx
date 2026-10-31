@@ -13,10 +13,13 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  Star,
+  Trash2,
+  Edit3,
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { MONTHS, MONTHLY_EXAM_SUBJECTS, EVALUATION_OPTIONS } from '../services/mockData';
-import type { SectionId } from '../types';
+import type { SectionId, Announcement } from '../types';
 
 export const TeacherDashboardModal: React.FC = () => {
   const {
@@ -32,6 +35,9 @@ export const TeacherDashboardModal: React.FC = () => {
     addNewGrade,
     updateScheduleImage,
     addNewAnnouncement,
+    updateAnnouncement,
+    removeAnnouncement,
+    currentAnnouncements,
     currentSchedule,
   } = useSchool();
 
@@ -53,6 +59,7 @@ export const TeacherDashboardModal: React.FC = () => {
   const [score, setScore] = useState<number>(95);
   const [maxScore, setMaxScore] = useState<number>(100);
   const [evaluation, setEvaluation] = useState<string>('متفوق');
+  const [isDistinguished, setIsDistinguished] = useState<boolean>(false);
   const [notes, setNotes] = useState('');
   const [gradeSuccessMsg, setGradeSuccessMsg] = useState('');
 
@@ -63,6 +70,7 @@ export const TeacherDashboardModal: React.FC = () => {
   const [scheduleSuccessMsg, setScheduleSuccessMsg] = useState('');
 
   // Announcement Form State
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [annPriority, setAnnPriority] = useState<'normal' | 'important' | 'urgent'>('important');
@@ -113,12 +121,14 @@ export const TeacherDashboardModal: React.FC = () => {
       score: Number(score),
       maxScore: Number(maxScore),
       evaluation: evaluation || 'متفوق',
+      isDistinguished,
       notes: notes.trim() || undefined,
       teacherName: currentTeacher ? currentTeacher.name : 'معلم المادة',
     });
 
     setGradeSuccessMsg('تمت إضافة الدرجة بنجاح إلى سجل درجات الفصل!');
     setStudentName('');
+    setIsDistinguished(false);
     setNotes('');
     setTimeout(() => setGradeSuccessMsg(''), 4000);
   };
@@ -150,7 +160,7 @@ export const TeacherDashboardModal: React.FC = () => {
     }
   };
 
-  // Handle Announcement Submit
+  // Handle Announcement Submit (Add or Edit)
   const handleAddAnnouncementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!annTitle.trim() || !annContent.trim()) {
@@ -158,19 +168,55 @@ export const TeacherDashboardModal: React.FC = () => {
       return;
     }
 
-    await addNewAnnouncement({
-      title: annTitle.trim(),
-      content: annContent.trim(),
-      gradeId: targetGradeId,
-      sectionId: targetSectionId,
-      author: currentTeacher ? `${currentTeacher.name} (${currentTeacher.subject})` : 'إدارة مدرسة سعد بن أبي وقاص',
-      priority: annPriority,
-    });
+    if (editingAnnouncementId) {
+      const existing = currentAnnouncements.find((a) => a.id === editingAnnouncementId);
+      if (existing) {
+        await updateAnnouncement({
+          ...existing,
+          title: annTitle.trim(),
+          content: annContent.trim(),
+          priority: annPriority,
+        });
+        setAnnSuccessMsg('تم تحديث التنبيه بنجاح!');
+      }
+      setEditingAnnouncementId(null);
+    } else {
+      await addNewAnnouncement({
+        title: annTitle.trim(),
+        content: annContent.trim(),
+        gradeId: targetGradeId,
+        sectionId: targetSectionId,
+        author: currentTeacher ? `${currentTeacher.name} (${currentTeacher.subject})` : 'إدارة مدرسة سعد بن أبي وقاص',
+        priority: annPriority,
+      });
+      setAnnSuccessMsg('تم نشر التنبيه بنجاح في لوحة إعلانات الفصل!');
+    }
 
-    setAnnSuccessMsg('تم نشر الإعلان بنجاح في لوحة إعلانات الفصل!');
     setAnnTitle('');
     setAnnContent('');
     setTimeout(() => setAnnSuccessMsg(''), 4000);
+  };
+
+  const handleStartEditAnnouncement = (ann: Announcement) => {
+    setEditingAnnouncementId(ann.id);
+    setAnnTitle(ann.title);
+    setAnnContent(ann.content);
+    setAnnPriority(ann.priority);
+  };
+
+  const handleCancelEditAnnouncement = () => {
+    setEditingAnnouncementId(null);
+    setAnnTitle('');
+    setAnnContent('');
+  };
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    if (window.confirm('هل أنت متأكد من حذف هذا التنبيه؟')) {
+      await removeAnnouncement(annId);
+      if (editingAnnouncementId === annId) {
+        handleCancelEditAnnouncement();
+      }
+    }
   };
 
   return (
@@ -544,6 +590,32 @@ export const TeacherDashboardModal: React.FC = () => {
                     />
                   </div>
 
+                  {/* Distinguished Student Toggle (طالب متميز) */}
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold shadow-xs">
+                        <Star className="w-4 h-4 fill-amber-950 text-amber-950" />
+                      </div>
+                      <div>
+                        <span className="block text-xs font-black text-amber-950">
+                          تمييز الطالب كـ «طالب متميز» (لوحة الشرف) ⭐
+                        </span>
+                        <span className="block text-[11px] text-amber-700 font-medium">
+                          يُمنح وسام التميز ويظهر بصورة خاصة ومميزة في كشوف ولوحة الشرف
+                        </span>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isDistinguished}
+                        onChange={(e) => setIsDistinguished(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
                     className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -666,84 +738,178 @@ export const TeacherDashboardModal: React.FC = () => {
                 </div>
               )}
 
-              {/* 3. Publish Announcement Tab Content */}
+              {/* 3. Publish & Manage Announcements Tab Content */}
               {activeTab === 'announcements' && (
-                <form onSubmit={handleAddAnnouncementSubmit} className="space-y-4">
-                  {annSuccessMsg && (
-                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>{annSuccessMsg}</span>
+                <div className="space-y-6">
+                  <form onSubmit={handleAddAnnouncementSubmit} className="space-y-4 bg-slate-50 p-4 rounded-3xl border border-slate-200">
+                    {annSuccessMsg && (
+                      <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{annSuccessMsg}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-blue-600" />
+                        <span>{editingAnnouncementId ? 'تعديل التنبيه المحدد' : 'نشر تنبيه أو إعلان جديد'}</span>
+                      </h5>
+                      {editingAnnouncementId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEditAnnouncement}
+                          className="px-2.5 py-1 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          إلغاء التعديل ✕
+                        </button>
+                      )}
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">عنوان التنبيه</label>
-                    <input
-                      type="text"
-                      placeholder="مثال: موعد اختبار شهر نوفمبر لمادة العلوم"
-                      value={annTitle}
-                      onChange={(e) => setAnnTitle(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">أهمية التنبيه</label>
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                        <input
-                          type="radio"
-                          name="prio"
-                          value="normal"
-                          checked={annPriority === 'normal'}
-                          onChange={() => setAnnPriority('normal')}
-                        />
-                        <span>عادي</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                        <input
-                          type="radio"
-                          name="prio"
-                          value="important"
-                          checked={annPriority === 'important'}
-                          onChange={() => setAnnPriority('important')}
-                        />
-                        <span>مهم</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                        <input
-                          type="radio"
-                          name="prio"
-                          value="urgent"
-                          checked={annPriority === 'urgent'}
-                          onChange={() => setAnnPriority('urgent')}
-                        />
-                        <span className="text-red-600 font-bold">عاجل وهام</span>
-                      </label>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">عنوان التنبيه *</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: موعد اختبار شهر نوفمبر لمادة العلوم"
+                        value={annTitle}
+                        onChange={(e) => setAnnTitle(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:outline-none focus:border-blue-600"
+                      />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">تفاصيل التنبيه</label>
-                    <textarea
-                      rows={3}
-                      placeholder="اكتب التوجيهات أو التعليمات للطلاب وأولياء الأمور..."
-                      value={annContent}
-                      onChange={(e) => setAnnContent(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">أهمية التنبيه</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <input
+                            type="radio"
+                            name="prio"
+                            value="normal"
+                            checked={annPriority === 'normal'}
+                            onChange={() => setAnnPriority('normal')}
+                          />
+                          <span>عادي</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <input
+                            type="radio"
+                            name="prio"
+                            value="important"
+                            checked={annPriority === 'important'}
+                            onChange={() => setAnnPriority('important')}
+                          />
+                          <span>مهم</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <input
+                            type="radio"
+                            name="prio"
+                            value="urgent"
+                            checked={annPriority === 'urgent'}
+                            onChange={() => setAnnPriority('urgent')}
+                          />
+                          <span className="text-red-600 font-bold">عاجل وهام</span>
+                        </label>
+                      </div>
+                    </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Bell className="w-4 h-4" />
-                    <span>نشر التنبيه الآن</span>
-                  </button>
-                </form>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">تفاصيل التنبيه *</label>
+                      <textarea
+                        rows={3}
+                        placeholder="اكتب التوجيهات أو التعليمات للطلاب وأولياء الأمور..."
+                        value={annContent}
+                        onChange={(e) => setAnnContent(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-blue-600"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {editingAnnouncementId ? (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>حفظ التعديلات على التنبيه</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bell className="w-4 h-4" />
+                          <span>نشر التنبيه الآن</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* List & Manage Current Announcements */}
+                  <div className="space-y-3">
+                    <h5 className="font-extrabold text-slate-800 text-xs flex items-center justify-between">
+                      <span>إدارة التنبيهات الحالية لهذا الفصل ({currentAnnouncements.length})</span>
+                      <span className="text-[11px] text-slate-400 font-normal">يمكنك تعديل أي تنبيه أو مسحه</span>
+                    </h5>
+
+                    {currentAnnouncements.length === 0 ? (
+                      <p className="text-center text-xs text-slate-400 py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        لا توجد تنبيهات منشورة لهذا الفصل حالياً
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {currentAnnouncements.map((ann) => (
+                          <div
+                            key={ann.id}
+                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                              editingAnnouncementId === ann.id
+                                ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-400/20'
+                                : 'bg-white border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h6 className="font-extrabold text-slate-900 text-xs truncate">
+                                  {ann.title}
+                                </h6>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    ann.priority === 'urgent'
+                                      ? 'bg-red-100 text-red-700'
+                                      : ann.priority === 'important'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-blue-100 text-blue-700'
+                                  }`}
+                                >
+                                  {ann.priority === 'urgent' ? 'عاجل' : ann.priority === 'important' ? 'مهم' : 'عادي'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 truncate mt-0.5">{ann.content}</p>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditAnnouncement(ann)}
+                                className="px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="تعديل هذا التنبيه"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>تعديل</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAnnouncement(ann.id)}
+                                className="p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                                title="مسح التنبيه نهائياً"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
             </div>

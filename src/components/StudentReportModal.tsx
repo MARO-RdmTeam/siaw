@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Award, Printer, Sparkles, School } from 'lucide-react';
+import { X, Award, Printer, Sparkles, School, Star } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 
 export const StudentReportModal: React.FC = () => {
@@ -86,6 +86,12 @@ export const StudentReportModal: React.FC = () => {
                 <span className="text-xl sm:text-2xl font-black text-blue-900">
                   {selectedStudentReport.studentName}
                 </span>
+                {selectedStudentReport.isDistinguished && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-300 text-amber-950 font-black text-xs shadow-xs border border-amber-300">
+                    <Star className="w-3.5 h-3.5 fill-amber-950 text-amber-950" />
+                    <span>حاصل على وسام الطالب المتميز المتفوق بتقدير خاص من المعلم وإدارة المدرسة ⭐</span>
+                  </div>
+                )}
               </div>
 
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">

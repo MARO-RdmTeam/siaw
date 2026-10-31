@@ -254,6 +254,21 @@ export async function deleteGrade(id: string, allLocalGrades: StudentGrade[]): P
   return true;
 }
 
+export async function updateGrade(updatedGrade: StudentGrade, allLocalGrades: StudentGrade[]): Promise<StudentGrade> {
+  if (firestoreInstance && updatedGrade.id) {
+    try {
+      await setDoc(doc(firestoreInstance, 'student_grades', updatedGrade.id), updatedGrade, { merge: true });
+    } catch (err) {
+      console.warn('Failed to update in Firestore, stored locally', err);
+    }
+  }
+
+  const updated = allLocalGrades.map((g) => (g.id === updatedGrade.id ? updatedGrade : g));
+  localStorage.setItem(STORAGE_KEY_LOCAL_GRADES, JSON.stringify(updated));
+
+  return updatedGrade;
+}
+
 // ================= SCHEDULE SYNC =================
 export async function getScheduleForClass(
   gradeId: number,
@@ -326,6 +341,25 @@ export async function getAnnouncementsForClass(
   sectionId: string,
   initialAnnouncements: Announcement[]
 ): Promise<Announcement[]> {
+  if (firestoreInstance) {
+    try {
+      const q = query(
+        collection(firestoreInstance, 'announcements'),
+        where('gradeId', '==', gradeId),
+        where('sectionId', '==', sectionId)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        return snapshot.docs.map((docSnap) => ({
+          ...(docSnap.data() as Announcement),
+          id: docSnap.id,
+        }));
+      }
+    } catch (err) {
+      console.warn('Firebase announcements query failed, falling back to local data', err);
+    }
+  }
+
   const localRaw = localStorage.getItem(STORAGE_KEY_LOCAL_ANNOUNCEMENTS);
   if (localRaw) {
     try {
@@ -339,12 +373,34 @@ export async function getAnnouncementsForClass(
 }
 
 export async function saveAnnouncement(announcement: Announcement, allAnnouncements: Announcement[]): Promise<Announcement> {
-  const item = {
+  const item: Announcement = {
     ...announcement,
     id: announcement.id || 'ann-' + Date.now(),
   };
 
+  if (firestoreInstance) {
+    try {
+      await setDoc(doc(firestoreInstance, 'announcements', item.id), item, { merge: true });
+    } catch (err) {
+      console.warn('Failed to save announcement to Firestore, stored locally', err);
+    }
+  }
+
   const updated = [item, ...allAnnouncements.filter((a) => a.id !== item.id)];
   localStorage.setItem(STORAGE_KEY_LOCAL_ANNOUNCEMENTS, JSON.stringify(updated));
   return item;
+}
+
+export async function deleteAnnouncement(id: string, allAnnouncements: Announcement[]): Promise<boolean> {
+  if (firestoreInstance) {
+    try {
+      await deleteDoc(doc(firestoreInstance, 'announcements', id));
+    } catch (err) {
+      console.warn('Failed to delete announcement from Firestore', err);
+    }
+  }
+
+  const updated = allAnnouncements.filter((a) => a.id !== id);
+  localStorage.setItem(STORAGE_KEY_LOCAL_ANNOUNCEMENTS, JSON.stringify(updated));
+  return true;
 }
