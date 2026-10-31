@@ -18,8 +18,8 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
-import { MONTHS, MONTHLY_EXAM_SUBJECTS, EVALUATION_OPTIONS } from '../services/mockData';
-import type { SectionId, Announcement } from '../types';
+import { MONTHS, MONTHLY_EXAM_SUBJECTS, EVALUATION_OPTIONS, SUBJECTS } from '../services/mockData';
+import type { SectionId, Announcement, SchedulePeriod, SectionSchedule } from '../types';
 
 export const TeacherDashboardModal: React.FC = () => {
   const {
@@ -34,6 +34,7 @@ export const TeacherDashboardModal: React.FC = () => {
     selectedSectionId,
     addNewGrade,
     updateScheduleImage,
+    updateTimetableSchedule,
     addNewAnnouncement,
     updateAnnouncement,
     removeAnnouncement,
@@ -68,6 +69,12 @@ export const TeacherDashboardModal: React.FC = () => {
   const [scheduleImageUrl, setScheduleImageUrl] = useState(currentSchedule.imageUrl || '');
   const [scheduleImageTitle, setScheduleImageTitle] = useState(currentSchedule.imageTitle || '');
   const [scheduleSuccessMsg, setScheduleSuccessMsg] = useState('');
+
+  // Written Schedule Dashboard State
+  const [dashboardScheduleDay, setDashboardScheduleDay] = useState<number>(0);
+  const [dashboardPeriodsDraft, setDashboardPeriodsDraft] = useState<SchedulePeriod[]>(() => {
+    return currentSchedule.timetable[0]?.periods ? JSON.parse(JSON.stringify(currentSchedule.timetable[0].periods)) : [];
+  });
 
   // Announcement Form State
   const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
@@ -143,6 +150,45 @@ export const TeacherDashboardModal: React.FC = () => {
 
     await updateScheduleImage(scheduleImageUrl, scheduleImageTitle);
     setScheduleSuccessMsg('تم حفظ وتحديث صورة الجدول بنجاح!');
+    setTimeout(() => setScheduleSuccessMsg(''), 4000);
+  };
+
+  const handleSwitchDashboardDay = (dayIdx: number) => {
+    setDashboardScheduleDay(dayIdx);
+    const day = currentSchedule.timetable.find((d) => d.dayIndex === dayIdx) || currentSchedule.timetable[0];
+    if (day) {
+      setDashboardPeriodsDraft(JSON.parse(JSON.stringify(day.periods)));
+    }
+  };
+
+  const handleDashboardPeriodChange = (idx: number, field: 'subject' | 'teacher', val: string) => {
+    setDashboardPeriodsDraft((prev) => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], [field]: val };
+      return copy;
+    });
+  };
+
+  const handleSaveDashboardWrittenSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newTimetable = currentSchedule.timetable.map((day) => {
+      if (day.dayIndex === dashboardScheduleDay) {
+        return {
+          ...day,
+          periods: dashboardPeriodsDraft,
+        };
+      }
+      return day;
+    });
+
+    const updated: SectionSchedule = {
+      ...currentSchedule,
+      timetable: newTimetable,
+      lastUpdated: new Date().toISOString().split('T')[0],
+    };
+
+    await updateTimetableSchedule(updated);
+    setScheduleSuccessMsg('تم حفظ وتحديث جدول الحصص بنجاح!');
     setTimeout(() => setScheduleSuccessMsg(''), 4000);
   };
 
@@ -719,21 +765,121 @@ export const TeacherDashboardModal: React.FC = () => {
                       </button>
                     </form>
                   ) : (
-                    <div className="space-y-3">
-                      <p className="text-xs text-slate-500">
-                        الحصص مسجلة تلقائياً لجميع أيام الأسبوع (الأحد إلى الخميس) بواقع 7 حصص يومياً. يمكنك تعديل الحصص أو التبديل لعرض الجدول المكتوب.
-                      </p>
+                    <form onSubmit={handleSaveDashboardWrittenSchedule} className="space-y-4">
+                      {/* Day Selector Tabs */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          اختر اليوم لتعديل حصصه (من الأحد إلى الخميس):
+                        </label>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                          {currentSchedule.timetable.map((day) => {
+                            const isSelected = dashboardScheduleDay === day.dayIndex;
+                            return (
+                              <button
+                                key={day.dayName}
+                                type="button"
+                                onClick={() => handleSwitchDashboardDay(day.dayIndex)}
+                                className={`flex-1 min-w-[70px] py-2 px-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                                }`}
+                              >
+                                {day.dayName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Periods Inputs */}
+                      <div className="space-y-3 max-h-[350px] overflow-y-auto p-1">
+                        {/* الحصص 1 إلى 3 */}
+                        {dashboardPeriodsDraft.slice(0, 3).map((period, idx) => (
+                          <div key={period.periodNumber} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                            <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-600 text-white text-xs font-black">
+                              الحصة {period.periodNumber}
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">المادة</label>
+                                <select
+                                  value={period.subject}
+                                  onChange={(e) => handleDashboardPeriodChange(idx, 'subject', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                                >
+                                  <option value="في انتظار اعتماد المعلم">في انتظار اعتماد المعلم</option>
+                                  {SUBJECTS.map((s) => (
+                                    <option key={s} value={s}>{s}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم المعلم</label>
+                                <input
+                                  type="text"
+                                  placeholder="مثال: أ/ محمد عبد الله"
+                                  value={period.teacher === 'معلم المادة' ? '' : period.teacher}
+                                  onChange={(e) => handleDashboardPeriodChange(idx, 'teacher', e.target.value || 'معلم المادة')}
+                                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* فاصل الفسحة */}
+                        <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-center font-bold text-xs flex items-center justify-center gap-2">
+                          <span>☕</span>
+                          <span>استراحة الفسحة (Break) بين الحصة الثالثة والرابعة</span>
+                        </div>
+
+                        {/* الحصص 4 إلى 6 */}
+                        {dashboardPeriodsDraft.slice(3, 6).map((period, relIdx) => {
+                          const actualIdx = relIdx + 3;
+                          return (
+                            <div key={period.periodNumber} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                              <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-600 text-white text-xs font-black">
+                                الحصة {period.periodNumber}
+                              </span>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-600 mb-1">المادة</label>
+                                  <select
+                                    value={period.subject}
+                                    onChange={(e) => handleDashboardPeriodChange(actualIdx, 'subject', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
+                                  >
+                                    <option value="في انتظار اعتماد المعلم">في انتظار اعتماد المعلم</option>
+                                    {SUBJECTS.map((s) => (
+                                      <option key={s} value={s}>{s}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم المعلم</label>
+                                  <input
+                                    type="text"
+                                    placeholder="مثال: أ/ محمد عبد الله"
+                                    value={period.teacher === 'معلم المادة' ? '' : period.teacher}
+                                    onChange={(e) => handleDashboardPeriodChange(actualIdx, 'teacher', e.target.value || 'معلم المادة')}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
                       <button
-                        type="button"
-                        onClick={() => {
-                          setScheduleSuccessMsg('تم تحديث جدول الحصص بنجاح!');
-                          setTimeout(() => setScheduleSuccessMsg(''), 3000);
-                        }}
-                        className="w-full py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs"
+                        type="submit"
+                        className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/20 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        حفظ التعديلات على الجدول المكتوب
+                        <Save className="w-4 h-4" />
+                        <span>حفظ واعتماد جدول الحصص لهذا اليوم 💾</span>
                       </button>
-                    </div>
+                    </form>
                   )}
                 </div>
               )}
