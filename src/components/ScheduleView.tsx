@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Calendar,
-  Clock,
   User,
   Image as ImageIcon,
   Table as TableIcon,
   Maximize2,
   Download,
   Printer,
-  Sparkles,
   Upload,
   CheckCircle2,
 } from 'lucide-react';
@@ -149,10 +147,6 @@ export const ScheduleView: React.FC = () => {
                     <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-blue-600 text-white group-hover:scale-105 transition-transform">
                       الحصة {period.periodNumber}
                     </span>
-                    <span className="text-[11px] font-mono font-medium text-slate-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-blue-500" />
-                      {period.time}
-                    </span>
                   </div>
 
                   <h5 className="text-base font-extrabold text-slate-900 mb-1 group-hover:text-blue-700 transition-colors">
@@ -179,12 +173,12 @@ export const ScheduleView: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-xl bg-amber-200/70 text-amber-950 font-black text-xs">
                     استراحة الفسحة (Break)
                   </span>
-                  <span className="text-xs text-amber-800 hidden sm:inline font-semibold">
-                    فاصل استراحة بين الحصة الثالثة والرابعة
+                  <span className="text-xs text-amber-800 font-semibold">
+                    فاصل استراحة بين الحصة الثالثة والحصة الرابعة
                   </span>
                 </div>
-                <span className="font-mono text-xs font-bold text-amber-900 bg-white/90 px-3 py-1 rounded-lg border border-amber-200 shadow-xs">
-                  10:15 - 10:45 (30 دقيقة)
+                <span className="text-xs font-bold text-amber-900 bg-white/90 px-3 py-1 rounded-lg border border-amber-200 shadow-xs">
+                  استراحة
                 </span>
               </div>
 
@@ -197,10 +191,6 @@ export const ScheduleView: React.FC = () => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-blue-600 text-white group-hover:scale-105 transition-transform">
                       الحصة {period.periodNumber}
-                    </span>
-                    <span className="text-[11px] font-mono font-medium text-slate-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-blue-500" />
-                      {period.time}
                     </span>
                   </div>
 
@@ -226,7 +216,7 @@ export const ScheduleView: React.FC = () => {
             <div className="mt-5 p-3 rounded-2xl bg-sky-50/70 border border-sky-100 flex items-center gap-2 text-xs text-sky-800">
               <CheckCircle2 className="w-4 h-4 text-sky-600 flex-shrink-0" />
               <span>
-                نظام اليوم المدرسي: 6 حصص دراسية تتخللها استراحة فسحة (Break) لمدة 30 دقيقة بعد الحصة الثالثة.
+                نظام اليوم المدرسي: 6 حصص دراسية تتخللها استراحة فسحة (Break) بعد الحصة الثالثة.
               </span>
             </div>
           </div>
@@ -318,49 +308,6 @@ export const ScheduleView: React.FC = () => {
 
         </div>
       )}
-
-      {/* Monthly Exam Dates Timetable Card */}
-      <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-3xl border border-blue-100/90 p-4 sm:p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <div>
-              <h4 className="font-extrabold text-slate-900 text-base">
-                مواعيد الاختبارات الشهرية لفصل {currentGrade.code}/{currentSection.letter.toLowerCase()}
-              </h4>
-              <p className="text-xs text-slate-500">تقويم اختبارات الفصل الدراسي الأول</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-            <span className="text-[11px] font-bold text-blue-600 px-2 py-0.5 rounded-md bg-blue-50">
-              الأحد 2 نوفمبر
-            </span>
-            <h5 className="font-bold text-slate-800 text-sm mt-2">اختبار الماث (الرياضيات) الشهري</h5>
-            <p className="text-xs text-slate-500 mt-1">من الوحدة الأولى إلى الثالثة • الحصة الثانية</p>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-            <span className="text-[11px] font-bold text-emerald-600 px-2 py-0.5 rounded-md bg-emerald-50">
-              الثلاثاء 4 نوفمبر
-            </span>
-            <h5 className="font-bold text-slate-800 text-sm mt-2">اختبار العلوم الشهري</h5>
-            <p className="text-xs text-slate-500 mt-1">تجارب ودورة العناصر • الحصة الثالثة</p>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs">
-            <span className="text-[11px] font-bold text-amber-600 px-2 py-0.5 rounded-md bg-amber-50">
-              الخميس 6 نوفمبر
-            </span>
-            <h5 className="font-bold text-slate-800 text-sm mt-2">اختبار اللغة العربية الشهري</h5>
-            <p className="text-xs text-slate-500 mt-1">القواعد النحوية والإملاء • الحصة الأولى</p>
-          </div>
-        </div>
-      </div>
 
     </div>
   );

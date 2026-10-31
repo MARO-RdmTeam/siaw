@@ -60,15 +60,8 @@ export const EVALUATION_OPTIONS = [
 // درجات الطلاب المبدئية (قاعدة بيانات بيضاء جاهزة للرصد الفعلي)
 export const INITIAL_GRADES: StudentGrade[] = [];
 
-// مواعيد الحصص الـ 6 (تتخللها استراحة الفسحة Break بعد الحصة 3)
-export const TIMES_6_PERIODS = [
-  '08:00 - 08:45',
-  '08:45 - 09:30',
-  '09:30 - 10:15',
-  '10:45 - 11:30',
-  '11:30 - 12:15',
-  '12:15 - 01:00',
-];
+// الحصص الـ 6 (تتخللها استراحة الفسحة Break بعد الحصة 3)
+export const TIMES_6_PERIODS = ['', '', '', '', '', ''];
 
 // توليد هيكل الجدول الدراسي (6 حصص بانتظار إدخال المعلم)
 export function generateDefaultTimetable(gradeId: number, sectionId: string): DailySchedule[] {

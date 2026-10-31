@@ -49,7 +49,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <span className="hover:text-blue-600 cursor-pointer">
-                  جدول مواعيد الاختبارات الشهرية
+                  لوحة شرف الطلاب المتفوقين
                 </span>
               </li>
             </ul>
