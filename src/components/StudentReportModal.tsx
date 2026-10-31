@@ -86,11 +86,6 @@ export const StudentReportModal: React.FC = () => {
                 <span className="text-xl sm:text-2xl font-black text-blue-900">
                   {selectedStudentReport.studentName}
                 </span>
-                {selectedStudentReport.seatNumber && (
-                  <span className="block text-xs text-slate-400 font-mono mt-0.5">
-                    رقم الجلوس: {selectedStudentReport.seatNumber}
-                  </span>
-                )}
               </div>
 
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">

@@ -36,11 +36,10 @@ export const GradesView: React.FC = () => {
   // Filtered grades calculation
   const filteredGrades = useMemo(() => {
     return currentGrades.filter((g) => {
-      // Search filter (name or seat number)
+      // Search filter (name)
       const matchesSearch =
         !searchQuery.trim() ||
-        g.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (g.seatNumber && g.seatNumber.includes(searchQuery.trim()));
+        g.studentName.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Month filter
       const matchesMonth = selectedMonth === 'الكل' || g.month === selectedMonth;
@@ -230,7 +229,7 @@ export const GradesView: React.FC = () => {
             <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="ابحث عن طالب بالاسم أو رقم الجلوس..."
+              placeholder="ابحث عن طالب بالاسم..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pr-10 pl-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all placeholder:text-slate-400 font-medium"
@@ -368,11 +367,6 @@ export const GradesView: React.FC = () => {
                           {grade.studentName}
                         </h4>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          {grade.seatNumber && (
-                            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-[11px] text-slate-600 font-bold">
-                              جلوس: {grade.seatNumber}
-                            </span>
-                          )}
                           <span>{grade.date}</span>
                         </div>
                       </div>
@@ -452,7 +446,6 @@ export const GradesView: React.FC = () => {
               <thead className="bg-slate-50 text-slate-600 text-xs font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3.5 px-4">اسم الطالب</th>
-                  <th className="py-3.5 px-4">رقم الجلوس</th>
                   <th className="py-3.5 px-4">المادة</th>
                   <th className="py-3.5 px-4">الشهر / الاختبار</th>
                   <th className="py-3.5 px-4 text-center">الدرجة</th>
@@ -478,9 +471,6 @@ export const GradesView: React.FC = () => {
                           {grade.studentName.charAt(0)}
                         </span>
                         <span>{grade.studentName}</span>
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-500 text-xs">
-                        {grade.seatNumber || '-'}
                       </td>
                       <td className="py-3.5 px-4 font-semibold text-slate-700">
                         {grade.subject}

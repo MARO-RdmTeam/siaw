@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
               <Search className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="ابحث باسم الطالب أو رقم الجلوس..."
+                placeholder="ابحث باسم الطالب..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pr-10 pl-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-400"

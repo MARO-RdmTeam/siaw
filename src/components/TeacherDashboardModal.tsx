@@ -48,7 +48,6 @@ export const TeacherDashboardModal: React.FC = () => {
   const [targetGradeId, setTargetGradeId] = useState<number>(selectedGradeId);
   const [targetSectionId, setTargetSectionId] = useState<SectionId>(selectedSectionId);
   const [studentName, setStudentName] = useState('');
-  const [seatNumber, setSeatNumber] = useState('');
   const [gradeMonth, setGradeMonth] = useState(MONTHS[0]);
   const [gradeSubject, setGradeSubject] = useState(MONTHLY_EXAM_SUBJECTS[0]);
   const [score, setScore] = useState<number>(95);
@@ -107,7 +106,6 @@ export const TeacherDashboardModal: React.FC = () => {
 
     await addNewGrade({
       studentName: studentName.trim(),
-      seatNumber: seatNumber.trim() || undefined,
       gradeId: targetGradeId,
       sectionId: targetSectionId,
       month: gradeMonth,
@@ -121,7 +119,6 @@ export const TeacherDashboardModal: React.FC = () => {
 
     setGradeSuccessMsg('تمت إضافة الدرجة بنجاح إلى سجل درجات الفصل!');
     setStudentName('');
-    setSeatNumber('');
     setNotes('');
     setTimeout(() => setGradeSuccessMsg(''), 4000);
   };
@@ -413,33 +410,18 @@ export const TeacherDashboardModal: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        اسم الطالب الرباعي *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="مثال: أحمد محمود العلي"
-                        value={studentName}
-                        onChange={(e) => setStudentName(e.target.value)}
-                        required
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        رقم الجلوس (اختياري)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="مثال: 6012"
-                        value={seatNumber}
-                        onChange={(e) => setSeatNumber(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold bg-white focus:outline-none focus:border-blue-600"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      اسم الطالب الرباعي *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: أحمد محمود العلي"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white focus:outline-none focus:border-blue-600"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
