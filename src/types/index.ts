@@ -19,10 +19,11 @@ export interface StudentGrade {
   seatNumber?: string;
   gradeId: number;
   sectionId: SectionId;
-  month: string; // e.g. "شهر أكتوبر", "شهر نوفمبر", "منتصف الفصل"
+  month: string; // e.g. "شهر أكتوبر", "شهر نوفمبر", "شهر ديسمبر"
   subject: string; // e.g. "الرياضيات", "اللغة العربية"
   score: number;
   maxScore: number;
+  evaluation?: string; // e.g. "متفوق", "ممتاز", "جيد جداً", "جيد", "مقبول"
   notes?: string;
   date: string;
   teacherName: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, ShieldCheck, Sparkles } from 'lucide-react';
+import { ShieldCheck, Sparkles } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 
 export const Footer: React.FC = () => {
@@ -11,13 +11,16 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           
           <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-blue-600 text-white shadow-xs">
-                <GraduationCap className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 p-1 shadow-xs flex items-center justify-center">
+                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-contain" />
               </div>
-              <span className="text-base font-extrabold text-blue-900">
-                مدرسة سعد بن أبي وقاص الابتدائية
-              </span>
+              <div>
+                <span className="text-base font-extrabold text-blue-900 block">
+                  مدرسة سعد بن أبي وقاص الرسمية للغات
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 font-mono">S.I.A.W Language School</span>
+              </div>
             </div>
             <p className="text-slate-500 leading-relaxed max-w-md">
               البوابة الإلكترونية المعتمدة للمرحلة الابتدائية لمتابعة جداول الحصص الأسبوعية ونتائج درجات الامتحانات الشهرية لجميع الصفوف والفصول (أ، ب، ج، د، هـ).
@@ -69,7 +72,7 @@ export const Footer: React.FC = () => {
 
         <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-[11px]">
           <div>
-            جميع الحقوق محفوظة © {new Date().getFullYear()} • مدرسة سعد بن أبي وقاص الابتدائية
+            جميع الحقوق محفوظة © {new Date().getFullYear()} • مدرسة سعد بن أبي وقاص الرسمية
           </div>
           <div className="flex items-center gap-1">
             صُمم بعناية وتجربة مستخدم مريحة للعين <Sparkles className="w-3.5 h-3.5 text-blue-500" />

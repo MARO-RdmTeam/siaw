@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import {
   X,
-  UserCheck,
   Lock,
   PlusCircle,
   Upload,
-  Database,
   CheckCircle2,
   Bell,
   Sparkles,
@@ -17,9 +15,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
-import { MONTHS, SUBJECTS } from '../services/mockData';
-import { DEFAULT_FIREBASE_CONFIG } from '../services/firebase';
-import type { FirebaseConfig, SectionId } from '../types';
+import { MONTHS, MONTHLY_EXAM_SUBJECTS, EVALUATION_OPTIONS } from '../services/mockData';
+import type { SectionId } from '../types';
 
 export const TeacherDashboardModal: React.FC = () => {
   const {
@@ -36,16 +33,13 @@ export const TeacherDashboardModal: React.FC = () => {
     updateScheduleImage,
     addNewAnnouncement,
     currentSchedule,
-    firebaseConnected,
-    updateFirebaseSettings,
-    disconnectFirebase,
   } = useSchool();
 
-  const [activeTab, setActiveTab] = useState<'grades' | 'schedule' | 'announcements' | 'firebase'>('grades');
+  const [activeTab, setActiveTab] = useState<'grades' | 'schedule' | 'announcements'>('grades');
 
-  // Teacher Email & Password Authentication State (Login Only, No Registration)
-  const [email, setEmail] = useState('admin@school.com');
-  const [password, setPassword] = useState('admin123');
+  // Teacher Email & Password Authentication State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -56,9 +50,10 @@ export const TeacherDashboardModal: React.FC = () => {
   const [studentName, setStudentName] = useState('');
   const [seatNumber, setSeatNumber] = useState('');
   const [gradeMonth, setGradeMonth] = useState(MONTHS[0]);
-  const [gradeSubject, setGradeSubject] = useState(SUBJECTS[0]);
+  const [gradeSubject, setGradeSubject] = useState(MONTHLY_EXAM_SUBJECTS[0]);
   const [score, setScore] = useState<number>(95);
   const [maxScore, setMaxScore] = useState<number>(100);
+  const [evaluation, setEvaluation] = useState<string>('متفوق');
   const [notes, setNotes] = useState('');
   const [gradeSuccessMsg, setGradeSuccessMsg] = useState('');
 
@@ -73,14 +68,6 @@ export const TeacherDashboardModal: React.FC = () => {
   const [annContent, setAnnContent] = useState('');
   const [annPriority, setAnnPriority] = useState<'normal' | 'important' | 'urgent'>('important');
   const [annSuccessMsg, setAnnSuccessMsg] = useState('');
-
-  // Firebase Config State (pre-filled with your project credentials)
-  const [fbApiKey, setFbApiKey] = useState(DEFAULT_FIREBASE_CONFIG.apiKey);
-  const [fbProjectId, setFbProjectId] = useState(DEFAULT_FIREBASE_CONFIG.projectId);
-  const [fbAuthDomain, setFbAuthDomain] = useState(DEFAULT_FIREBASE_CONFIG.authDomain);
-  const [fbStorageBucket, setFbStorageBucket] = useState(DEFAULT_FIREBASE_CONFIG.storageBucket);
-  const [fbAppId, setFbAppId] = useState(DEFAULT_FIREBASE_CONFIG.appId);
-  const [fbSuccessMsg, setFbSuccessMsg] = useState('');
 
   if (!teacherModalOpen) return null;
 
@@ -98,11 +85,16 @@ export const TeacherDashboardModal: React.FC = () => {
     }
   };
 
-  // Quick fill Admin credentials
-  const handleQuickCredential = () => {
-    setAuthError('');
-    setEmail('admin@school.com');
-    setPassword('admin123');
+  // Handle Score & Evaluation auto-sync
+  const handleScoreChange = (newScore: number) => {
+    setScore(newScore);
+    const pct = (newScore / (maxScore || 100)) * 100;
+    if (pct >= 95) setEvaluation('متفوق');
+    else if (pct >= 85) setEvaluation('ممتاز');
+    else if (pct >= 75) setEvaluation('جيد جداً');
+    else if (pct >= 65) setEvaluation('جيد');
+    else if (pct >= 50) setEvaluation('مقبول');
+    else setEvaluation('يحتاج متابعة');
   };
 
   // Handle Grade Submission
@@ -122,6 +114,7 @@ export const TeacherDashboardModal: React.FC = () => {
       subject: gradeSubject,
       score: Number(score),
       maxScore: Number(maxScore),
+      evaluation: evaluation || 'متفوق',
       notes: notes.trim() || undefined,
       teacherName: currentTeacher ? currentTeacher.name : 'أ. طارق عبد الرحمن',
     });
@@ -145,8 +138,9 @@ export const TeacherDashboardModal: React.FC = () => {
     const picked = samples[Math.floor(Math.random() * samples.length)];
     setStudentName(picked);
     setSeatNumber('60' + Math.floor(10 + Math.random() * 89));
-    setScore(Math.floor(88 + Math.random() * 13));
-    setNotes('أداء ممتاز ومشاركة مميزة في الحصة');
+    const randomScore = Math.floor(88 + Math.random() * 13);
+    handleScoreChange(randomScore);
+    setNotes('أداء متميز ومشاركة نموذجية في الحصة');
   };
 
   // Handle Schedule Image Upload / Change
@@ -199,30 +193,6 @@ export const TeacherDashboardModal: React.FC = () => {
     setTimeout(() => setAnnSuccessMsg(''), 4000);
   };
 
-  // Handle Firebase Save
-  const handleSaveFirebase = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fbApiKey || !fbProjectId) {
-      alert('يرجى إدخال على الأقل API Key و Project ID');
-      return;
-    }
-
-    const conf: FirebaseConfig = {
-      apiKey: fbApiKey.trim(),
-      authDomain: fbAuthDomain.trim() || `${fbProjectId}.firebaseapp.com`,
-      projectId: fbProjectId.trim(),
-      storageBucket: fbStorageBucket.trim() || `${fbProjectId}.appspot.com`,
-      messagingSenderId: '',
-      appId: fbAppId.trim() || '',
-    };
-
-    const ok = updateFirebaseSettings(conf);
-    if (ok) {
-      setFbSuccessMsg('تم ربط إعدادات Firebase بنجاح!');
-      setTimeout(() => setFbSuccessMsg(''), 4000);
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-blue-100 flex flex-col overflow-hidden">
@@ -230,15 +200,15 @@ export const TeacherDashboardModal: React.FC = () => {
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-blue-900 to-indigo-900 text-white">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md">
-              <UserCheck className="w-6 h-6 text-sky-300" />
+            <div className="w-12 h-12 rounded-2xl bg-white p-1 flex items-center justify-center shadow-md">
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                لوحة إدارة المعلمين | مدرسة سعد بن أبي وقاص
+              <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">
+                لوحة إدارة المعلمين | S.I.A.W Language School
               </h3>
               <p className="text-xs text-blue-200">
-                تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
+                مدرسة سعد بن أبي وقاص الرسمية للغات • نظام رصد الدرجات
               </p>
             </div>
           </div>
@@ -335,16 +305,11 @@ export const TeacherDashboardModal: React.FC = () => {
                   <span>{authLoading ? 'جاري التحقق...' : 'دخول لوحة الإدارة 🚀'}</span>
                 </button>
 
-                {/* Quick login helper */}
-                <div className="pt-2 border-t border-slate-200">
-                  <button
-                    type="button"
-                    onClick={handleQuickCredential}
-                    className="w-full py-2 px-3 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-900 text-xs font-bold transition-colors text-center cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    <span>تعبئة حساب المدير الافتراضي (admin@school.com / admin123)</span>
-                  </button>
+                {/* Security notice */}
+                <div className="pt-2 border-t border-slate-200 text-center">
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    🔒 تسجيل الدخول مقتصر فقط على الإيميلات المصرح بها والمضافة في سحابة Firebase
+                  </p>
                 </div>
 
               </form>
@@ -364,7 +329,7 @@ export const TeacherDashboardModal: React.FC = () => {
                     <h5 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                       <span>{currentTeacher.name}</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        مسجل الدخول
+                        مصرح له في Firebase
                       </span>
                     </h5>
                     <p className="text-xs text-blue-700 font-mono">
@@ -382,7 +347,7 @@ export const TeacherDashboardModal: React.FC = () => {
                 </button>
               </div>
 
-              {/* Navigation Tabs inside dashboard */}
+              {/* Navigation Tabs inside dashboard (Locked 3 tabs, No Firebase edit) */}
               <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl overflow-x-auto scrollbar-none border border-slate-200">
                 <button
                   onClick={() => setActiveTab('grades')}
@@ -412,16 +377,6 @@ export const TeacherDashboardModal: React.FC = () => {
                 >
                   <Bell className="w-4 h-4" />
                   <span>نشر إعلان</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('firebase')}
-                  className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'firebase' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Database className="w-4 h-4" />
-                  <span>إعدادات Firebase</span>
                 </button>
               </div>
 
@@ -530,18 +485,23 @@ export const TeacherDashboardModal: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">المادة</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        المادة (مواد اختبارات الشهور)
+                      </label>
                       <select
                         value={gradeSubject}
                         onChange={(e) => setGradeSubject(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white"
                       >
-                        {SUBJECTS.map((s) => (
+                        {MONTHLY_EXAM_SUBJECTS.map((s) => (
                           <option key={s} value={s}>
                             {s}
                           </option>
                         ))}
                       </select>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        * ملاحظة: التربية الفنية والنشاط ليس لهما امتحان شهر
+                      </p>
                     </div>
                   </div>
 
@@ -555,7 +515,7 @@ export const TeacherDashboardModal: React.FC = () => {
                         min="0"
                         max="100"
                         value={score}
-                        onChange={(e) => setScore(Number(e.target.value))}
+                        onChange={(e) => handleScoreChange(Number(e.target.value))}
                         required
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-black text-blue-900 bg-white focus:outline-none focus:border-blue-600"
                       />
@@ -570,10 +530,46 @@ export const TeacherDashboardModal: React.FC = () => {
                         min="1"
                         max="100"
                         value={maxScore}
-                        onChange={(e) => setMaxScore(Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setMaxScore(val);
+                          handleScoreChange(score);
+                        }}
                         required
                         className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-black text-slate-600 bg-white"
                       />
+                    </div>
+                  </div>
+
+                  {/* Evaluation Selector (متفوق، ممتاز، جيد جداً...) */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        تقدير ومستوى الطالب *
+                      </span>
+                      <span className="text-[11px] font-bold text-blue-700">
+                        التقدير المحدد: <span className="underline">{evaluation}</span>
+                      </span>
+                    </label>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                      {EVALUATION_OPTIONS.map((opt) => {
+                        const isSelected = evaluation === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setEvaluation(opt)}
+                            className={`py-2 px-1 text-xs font-extrabold rounded-xl border transition-all cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-102 ring-2 ring-blue-300'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            {opt === 'متفوق' ? '🌟 متفوق' : opt === 'ممتاز' ? '✨ ممتاز' : opt}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -792,116 +788,6 @@ export const TeacherDashboardModal: React.FC = () => {
                 </form>
               )}
 
-              {/* 4. Firebase Settings Tab Content */}
-              {activeTab === 'firebase' && (
-                <div className="space-y-4">
-                  {fbSuccessMsg && (
-                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>{fbSuccessMsg}</span>
-                    </div>
-                  )}
-
-                  <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-2">
-                    <div className="flex items-center gap-2 font-bold text-sm">
-                      <Database className="w-4 h-4 text-blue-600" />
-                      <span>حالة الاتصال: {firebaseConnected ? '🟢 متصل بسحابة Firebase Firestore' : '🔵 الوضع المحلي الفوري (LocalStorage)'}</span>
-                    </div>
-                    <p>
-                      مشروعك مربوط الآن مباشرة بـ Firebase: <strong className="font-mono">siaw-1fddc</strong>.
-                    </p>
-                  </div>
-
-                  <form onSubmit={handleSaveFirebase} className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Firebase API Key *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="AIzaSy..."
-                        value={fbApiKey}
-                        onChange={(e) => setFbApiKey(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Firebase Project ID *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="my-school-project"
-                        value={fbProjectId}
-                        onChange={(e) => setFbProjectId(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Auth Domain (اختياري)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="my-school.firebaseapp.com"
-                          value={fbAuthDomain}
-                          onChange={(e) => setFbAuthDomain(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Storage Bucket (اختياري)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="my-school.appspot.com"
-                          value={fbStorageBucket}
-                          onChange={(e) => setFbStorageBucket(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          App ID (اختياري)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="1:123456789:web:abcdef"
-                          value={fbAppId}
-                          onChange={(e) => setFbAppId(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <button
-                        type="submit"
-                        className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm cursor-pointer"
-                      >
-                        تحديث وحفظ مفاتيح Firebase
-                      </button>
-
-                      {firebaseConnected && (
-                        <button
-                          type="button"
-                          onClick={disconnectFirebase}
-                          className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-red-50 text-red-600 font-bold text-xs cursor-pointer"
-                        >
-                          فصل الربط
-                        </button>
-                      )}
-                    </div>
-                  </form>
-                </div>
-              )}
-
             </div>
           )}
 
@@ -909,7 +795,10 @@ export const TeacherDashboardModal: React.FC = () => {
 
         {/* Modal Footer */}
         <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>مدرسة سعد بن أبي وقاص الابتدائية • لوحة الإدارة</span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-semibold text-slate-700">سحابة Firebase مشفرة ومؤمنة (مشروع siaw-1fddc)</span>
+          </div>
           <button
             onClick={() => setTeacherModalOpen(false)}
             className="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold cursor-pointer"

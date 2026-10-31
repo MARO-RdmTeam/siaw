@@ -53,13 +53,16 @@ export const StudentReportModal: React.FC = () => {
               <School className="w-96 h-96 text-blue-900" />
             </div>
 
-            {/* School Crest & Header */}
-            <div className="space-y-1">
+            {/* School Logo & Header */}
+            <div className="flex flex-col items-center justify-center space-y-1 mb-2">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border border-blue-100 p-1.5 shadow-sm mb-1">
+                <img src="/logo.jpg" alt="S.I.A.W Logo" className="w-full h-full object-contain" />
+              </div>
               <span className="text-xs font-bold text-slate-400 tracking-wider">
-                المملكة العربية السعودية • وزارة التعليم
+                وزارة التربية والتعليم • S.I.A.W Language School
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-blue-950">
-                مدرسة سعد بن أبي وقاص الابتدائية
+                مدرسة سعد بن أبي وقاص الرسمية للغات
               </h3>
               <p className="text-xs text-blue-600 font-bold">
                 إدارة الشؤون التعليمية والامتحانات
@@ -122,9 +125,9 @@ export const StudentReportModal: React.FC = () => {
                 <div className="h-10 w-px bg-slate-200" />
 
                 <div>
-                  <span className="block text-xs text-slate-400">التقدير العام</span>
+                  <span className="block text-xs text-slate-400">التقدير والمستوى</span>
                   <span className="text-base sm:text-lg font-black text-blue-800">
-                    {isExcellent ? 'ممتاز مرتفع 🌟' : percentage >= 80 ? 'جيد جداً' : 'جيد'}
+                    {selectedStudentReport.evaluation || (isExcellent ? 'متفوق 🌟' : percentage >= 85 ? 'ممتاز ✨' : 'جيد جداً')}
                   </span>
                 </div>
               </div>

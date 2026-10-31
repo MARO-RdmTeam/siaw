@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  GraduationCap,
   Eye,
   EyeOff,
   UserCheck,
@@ -35,19 +34,19 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={triggerCelebration}
-              className="p-2.5 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white shadow-md hover:scale-105 transition-transform duration-200 cursor-pointer"
-              title="مدرسة سعد بن أبي وقاص الابتدائية"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-blue-100 shadow-md hover:scale-105 transition-transform duration-200 cursor-pointer p-1 flex items-center justify-center overflow-hidden"
+              title="مدرسة سعد بن أبي وقاص الرسمية للغات (S.I.A.W)"
             >
-              <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8" />
+              <img src="/logo.jpg" alt="S.I.A.W Logo" className="w-full h-full object-contain" />
             </button>
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-blue-950 flex items-center gap-1.5">
-                  مدرسة <span className="text-blue-600">سعد بن أبي وقاص</span> الابتدائية
+                <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-blue-950 flex items-center gap-1.5">
+                  مدرسة <span className="text-blue-600">سعد بن أبي وقاص</span> الرسمية للغات
                 </h1>
                 <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  <Sparkles className="w-3 h-3 text-blue-500" /> البوابة الرسمية
+                  <Sparkles className="w-3 h-3 text-blue-500" /> S.I.A.W
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium hidden sm:block">

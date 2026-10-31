@@ -15,7 +15,6 @@ import type { Firestore } from 'firebase/firestore';
 import {
   getAuth,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import type { Auth } from 'firebase/auth';
@@ -30,42 +29,26 @@ export const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
   appId: '1:322698513792:web:fc429607cef065badcc565',
 };
 
-const STORAGE_KEY_FIREBASE_CONFIG = 'siaw_firebase_config';
 const STORAGE_KEY_LOCAL_GRADES = 'siaw_local_grades';
 const STORAGE_KEY_LOCAL_SCHEDULES = 'siaw_local_schedules';
 const STORAGE_KEY_LOCAL_ANNOUNCEMENTS = 'siaw_local_announcements';
-const STORAGE_KEY_REGISTERED_USERS = 'siaw_registered_users';
 
 let appInstance: FirebaseApp | null = null;
 let firestoreInstance: Firestore | null = null;
 let authInstance: Auth | null = null;
 
-// Retrieve stored Firebase configuration (defaults to user's siaw-1fddc project)
+// Retrieve Firebase configuration (locked to official project siaw-1fddc)
 export function getStoredFirebaseConfig(): FirebaseConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_FIREBASE_CONFIG);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.apiKey && parsed.projectId) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Error reading Firebase config from storage', err);
-  }
   return DEFAULT_FIREBASE_CONFIG;
 }
 
 // Initialize Firebase with the project credentials
-export function initFirebase(config?: FirebaseConfig | null): {
+export function initFirebase(_config?: FirebaseConfig | null): {
   app: FirebaseApp | null;
   db: Firestore | null;
   auth: Auth | null;
 } {
-  const conf = config || getStoredFirebaseConfig();
-  if (!conf || !conf.apiKey || !conf.projectId) {
-    return { app: null, db: null, auth: null };
-  }
+  const conf = DEFAULT_FIREBASE_CONFIG; // Locked to prevent tampering
 
   try {
     const existingApps = getApps();
@@ -94,22 +77,13 @@ export function isFirebaseConnected(): boolean {
   return !!firestoreInstance;
 }
 
-export function saveFirebaseConfig(config: FirebaseConfig): boolean {
-  try {
-    localStorage.setItem(STORAGE_KEY_FIREBASE_CONFIG, JSON.stringify(config));
-    initFirebase(config);
-    return true;
-  } catch (e) {
-    console.error('Failed to save Firebase config', e);
-    return false;
-  }
+// Locked: client modification disabled
+export function saveFirebaseConfig(_config: FirebaseConfig): boolean {
+  return true;
 }
 
 export function clearFirebaseConfig(): void {
-  localStorage.removeItem(STORAGE_KEY_FIREBASE_CONFIG);
-  appInstance = null;
-  firestoreInstance = null;
-  authInstance = null;
+  // Client reset disabled to protect permanent connection
 }
 
 // ================= AUTHENTICATION (EMAIL & PASSWORD) =================
@@ -126,11 +100,12 @@ export async function authenticateTeacher(
     return { success: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' };
   }
 
-  // 1. Try Firebase Authentication (Cloud)
+  // 1. Firebase Authentication (Cloud) - Strict Authorization Check
   if (authInstance) {
     try {
       const userCredential = await signInWithEmailAndPassword(authInstance, cleanEmail, cleanPass);
       const fbUser = userCredential.user;
+
       return {
         success: true,
         user: {
@@ -142,36 +117,37 @@ export async function authenticateTeacher(
         },
       };
     } catch (fbErr: any) {
-      // If user not found, try creating the account in Firebase Auth automatically
-      if (fbErr.code === 'auth/user-not-found' || fbErr.code === 'auth/invalid-credential') {
-        try {
-          const newCredential = await createUserWithEmailAndPassword(authInstance, cleanEmail, cleanPass);
-          const newUser = newCredential.user;
-          return {
-            success: true,
-            user: {
-              id: newUser.uid,
-              name: teacherName || cleanEmail.split('@')[0],
-              subject: subject || 'جميع المواد',
-              email: newUser.email || cleanEmail,
-              isLoggedIn: true,
-            },
-          };
-        } catch {
-          // If creation error, fall through to local fallback
-        }
+      console.warn('Firebase Auth error:', fbErr.code);
+      let errorMsg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+      
+      if (
+        fbErr.code === 'auth/user-not-found' ||
+        fbErr.code === 'auth/invalid-credential' ||
+        fbErr.code === 'auth/invalid-login-credentials'
+      ) {
+        errorMsg = 'هذا البريد الإلكتروني غير مضاف في قائمة المعلمين المصرح لهم في Firebase. يُسمح فقط بالدخول للحسابات التي يضيفها المسؤول في Firebase.';
+      } else if (fbErr.code === 'auth/wrong-password') {
+        errorMsg = 'كلمة المرور غير صحيحة لحساب هذا المعلم في Firebase.';
+      } else if (fbErr.code === 'auth/invalid-email') {
+        errorMsg = 'صيغة البريد الإلكتروني غير صالحة.';
+      } else if (fbErr.code === 'auth/too-many-requests') {
+        errorMsg = 'تم حظر المحاولات مؤقتاً بسبب تكرار المحاولات الخاطئة. يرجى المحاولة بعد قليل.';
       }
+
+      return {
+        success: false,
+        error: errorMsg,
+      };
     }
   }
 
-  // 2. Local fallback if Firebase Auth is not yet toggled on in the console or offline
-  // Pre-configured Admin account: admin@school.com / admin123
+  // Fallback for offline emergency admin only
   if (cleanEmail === 'admin@school.com' && cleanPass === 'admin123') {
     return {
       success: true,
       user: {
         id: 'admin-root',
-        name: 'مدير النظام (الإدارة العامة)',
+        name: 'مدير النظام (حساب الطوارئ)',
         subject: 'الإدارة المدرسية',
         email: cleanEmail,
         isLoggedIn: true,
@@ -179,52 +155,9 @@ export async function authenticateTeacher(
     };
   }
 
-  // Check locally registered accounts
-  const rawUsers = localStorage.getItem(STORAGE_KEY_REGISTERED_USERS);
-  const usersList: Array<{ email: string; pass: string; name: string; subject: string }> = rawUsers
-    ? JSON.parse(rawUsers)
-    : [];
-
-  const found = usersList.find((u) => u.email === cleanEmail && u.pass === cleanPass);
-  if (found) {
-    return {
-      success: true,
-      user: {
-        id: 'user-' + Date.now(),
-        name: found.name,
-        subject: found.subject,
-        email: found.email,
-        isLoggedIn: true,
-      },
-    };
-  }
-
-  // If password has at least 6 characters, automatically register/allow this teacher!
-  if (cleanPass.length >= 6) {
-    const newUserRecord = {
-      email: cleanEmail,
-      pass: cleanPass,
-      name: teacherName || cleanEmail.split('@')[0],
-      subject: subject || 'المعلم',
-    };
-    usersList.push(newUserRecord);
-    localStorage.setItem(STORAGE_KEY_REGISTERED_USERS, JSON.stringify(usersList));
-
-    return {
-      success: true,
-      user: {
-        id: 'teacher-' + Date.now(),
-        name: newUserRecord.name,
-        subject: newUserRecord.subject,
-        email: newUserRecord.email,
-        isLoggedIn: true,
-      },
-    };
-  }
-
   return {
     success: false,
-    error: 'كلمة المرور غير صحيحة، أو يجب أن تتكون من 6 أحرف على الأقل لحساب جديد',
+    error: 'خدمة Firebase غير متصلة أو أن هذا البريد غير مصرح له بالدخول في Firebase.',
   };
 }
 

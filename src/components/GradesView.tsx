@@ -12,7 +12,7 @@ import {
   List,
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
-import { MONTHS, SUBJECTS } from '../services/mockData';
+import { MONTHS, MONTHLY_EXAM_SUBJECTS } from '../services/mockData';
 import type { StudentGrade } from '../types';
 
 export const GradesView: React.FC = () => {
@@ -68,31 +68,80 @@ export const GradesView: React.FC = () => {
     return { avg, max, excellentCount, passRate };
   }, [filteredGrades]);
 
-  const getStatusBadge = (score: number, maxScore: number) => {
-    const pct = (score / maxScore) * 100;
-    if (pct >= 90) {
+  const getStatusBadge = (score: number, maxScore: number, customEvaluation?: string) => {
+    if (customEvaluation) {
+      if (customEvaluation === 'متفوق') {
+        return {
+          text: 'متفوق 🌟',
+          bg: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold',
+          bar: 'bg-emerald-500',
+        };
+      }
+      if (customEvaluation === 'ممتاز') {
+        return {
+          text: 'ممتاز ✨',
+          bg: 'bg-blue-50 text-blue-700 border-blue-200 font-extrabold',
+          bar: 'bg-blue-500',
+        };
+      }
+      if (customEvaluation === 'جيد جداً') {
+        return {
+          text: 'جيد جداً',
+          bg: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold',
+          bar: 'bg-indigo-500',
+        };
+      }
+      if (customEvaluation === 'جيد') {
+        return {
+          text: 'جيد',
+          bg: 'bg-amber-50 text-amber-800 border-amber-200 font-bold',
+          bar: 'bg-amber-500',
+        };
+      }
+      if (customEvaluation === 'مقبول') {
+        return {
+          text: 'مقبول',
+          bg: 'bg-slate-50 text-slate-700 border-slate-200 font-bold',
+          bar: 'bg-slate-500',
+        };
+      }
       return {
-        text: 'ممتاز 🌟',
-        bg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        text: customEvaluation,
+        bg: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+        bar: 'bg-rose-500',
+      };
+    }
+
+    const pct = (score / maxScore) * 100;
+    if (pct >= 95) {
+      return {
+        text: 'متفوق 🌟',
+        bg: 'bg-emerald-50 text-emerald-800 border-emerald-300 font-extrabold',
         bar: 'bg-emerald-500',
       };
-    } else if (pct >= 80) {
+    } else if (pct >= 85) {
+      return {
+        text: 'ممتاز ✨',
+        bg: 'bg-blue-50 text-blue-700 border-blue-200 font-extrabold',
+        bar: 'bg-blue-500',
+      };
+    } else if (pct >= 75) {
       return {
         text: 'جيد جداً',
-        bg: 'bg-blue-50 text-blue-700 border-blue-200',
-        bar: 'bg-blue-500',
+        bg: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold',
+        bar: 'bg-indigo-500',
       };
     } else if (pct >= 65) {
       return {
         text: 'جيد',
-        bg: 'bg-sky-50 text-sky-700 border-sky-200',
-        bar: 'bg-sky-500',
+        bg: 'bg-amber-50 text-amber-800 border-amber-200 font-bold',
+        bar: 'bg-amber-500',
       };
     } else {
       return {
-        text: 'يحتاج متابعة',
-        bg: 'bg-amber-50 text-amber-700 border-amber-200',
-        bar: 'bg-amber-500',
+        text: 'مقبول',
+        bg: 'bg-slate-50 text-slate-700 border-slate-200 font-bold',
+        bar: 'bg-slate-500',
       };
     }
   };
@@ -211,14 +260,14 @@ export const GradesView: React.FC = () => {
               ))}
             </select>
 
-            {/* Subject Selector */}
+            {/* Subject Selector (Monthly Exam Subjects) */}
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
             >
               <option value="الكل">جميع المواد</option>
-              {SUBJECTS.map((s) => (
+              {MONTHLY_EXAM_SUBJECTS.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -298,7 +347,7 @@ export const GradesView: React.FC = () => {
       {viewStyle === 'cards' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredGrades.map((grade) => {
-            const badge = getStatusBadge(grade.score, grade.maxScore);
+            const badge = getStatusBadge(grade.score, grade.maxScore, grade.evaluation);
             const percentage = Math.round((grade.score / grade.maxScore) * 100);
 
             return (
@@ -415,7 +464,7 @@ export const GradesView: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredGrades.map((grade) => {
-                  const badge = getStatusBadge(grade.score, grade.maxScore);
+                  const badge = getStatusBadge(grade.score, grade.maxScore, grade.evaluation);
                   const percentage = Math.round((grade.score / grade.maxScore) * 100);
 
                   return (
